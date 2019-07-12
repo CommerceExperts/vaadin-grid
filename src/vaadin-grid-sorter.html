@@ -184,13 +184,14 @@ This program is available under Apache License Version 2.0, available at https:/
           }
 
           e.preventDefault();
-          if (this.direction === 'asc') {
-            this.direction = 'desc';
-          } else if (this.direction === 'desc') {
+          if (this.direction === 'desc') {
+            this.direction = 'asc';
+          } else if (this.direction === 'asc') {
             this.direction = null;
           } else {
-            this.direction = 'asc';
+            this.direction = 'desc';
           }
+          this.dispatchEvent(new CustomEvent('clicked', {bubbles: true, composed: true}));
         }
 
         _directionOrOrderChanged(direction, order) {
