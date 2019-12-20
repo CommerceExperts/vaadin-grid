@@ -339,7 +339,7 @@ This program is available under Apache License Version 2.0, available at https:/
       }
 
       static get version() {
-        return '5.4.6';
+        return '5.5.0';
       }
 
       static get observers() {
@@ -365,7 +365,8 @@ This program is available under Apache License Version 2.0, available at https:/
 
           _ios: {
             type: Boolean,
-            value: /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+            value: (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream)
+              || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
           },
 
           _edge: {

@@ -43,14 +43,31 @@
         return window.getComputedStyle(element).position === 'fixed';
       }
 
-      function wheel(deltaX, deltaY) {
+      function wheel(deltaX, deltaY, deltaMode = WheelEvent.DOM_DELTA_PIXEL) {
         const e = new CustomEvent('wheel', {bubbles: true, cancelable: true});
         e.deltaY = deltaY;
         e.deltaX = deltaX;
+        e.deltaMode = deltaMode;
         getBodyCellContent(grid, 0, 0).dispatchEvent(e);
         grid._debouncerWheelAnimationFrame.flush();
         return e;
       }
+
+      it('should scroll by pixels when deltaMode is DOM_DELTA_PIXEL (default)', () => {
+        wheel(0, 1, WheelEvent.DOM_DELTA_PIXEL);
+        expect(grid.$.table.scrollTop).to.equal(1);
+      });
+
+      it('should scroll by lines when deltaMode is DOM_DELTA_LINE', () => {
+        wheel(0, 1, WheelEvent.DOM_DELTA_LINE);
+        expect(grid.$.table.scrollTop).to.equal(16);
+      });
+
+      it('should scroll by pages when deltaMode is DOM_DELTA_PAGE', () => {
+        wheel(0, 1, WheelEvent.DOM_DELTA_PAGE);
+        expect(grid._scrollPageHeight).to.be.above(1);
+        expect(grid.$.table.scrollTop).to.equal(grid._scrollPageHeight);
+      });
 
       it('should have the right amount of scrollbars/scrollers', () => {
         let scrollbars = 0;
@@ -159,6 +176,18 @@
         expect(grid.scrollHeight - grid.clientHeight).to.equal(0);
       });
 
+      it('should not scroll document on attach', () => {
+        document.body.style.paddingTop = '10000px';
+        document.documentElement.scrollTop = 10000;
+        const scrollTop = document.documentElement.scrollTop;
+        fixture('default');
+        const newScrollTop = document.documentElement.scrollTop;
+        // Cleanup
+        document.body.style.paddingTop = '';
+
+        expect(scrollTop).to.equal(newScrollTop);
+      });
+
       it('should mark wheel scroll', () => {
         const scroller = grid.$.scroller;
         expect(scroller.hasAttribute('wheel-scrolling')).to.be.false;
@@ -174,22 +203,21 @@
       });
 
       it('should defer adding scrolling state attributes', done => {
-        flushGrid(grid);
         const scroller = grid.$.scroller;
-        grid.$.table.addEventListener('scroll', () => {
+        listenOnce(grid.$.table, 'scroll', () => {
           expect(scroller.hasAttribute('scrolling')).to.be.false;
           requestAnimationFrame(() => {
             expect(scroller.hasAttribute('scrolling')).to.be.true;
             done();
           });
         });
-        grid.$.table.scrollLeft = 1;
+        grid.$.table.dispatchEvent(new CustomEvent('scroll'));
       });
 
       it('should not sync outer scroller on IOS', done => {
         grid._ios = true;
         const spy = sinon.spy(grid.$.outerscroller, 'syncOuterScroller');
-        grid.$.table.addEventListener('scroll', () => {
+        listenOnce(grid.$.table, 'scroll', () => {
           expect(spy.called).to.be.false;
           done();
         });
